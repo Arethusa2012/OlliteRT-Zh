@@ -69,7 +69,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew --no-daemon assembleStableRelease \
+          ./gradlew --no-daemon --info --stacktrace assembleStableRelease \
             -PAPP_VERSION_NAME="${TAG}" \
             -PAPP_VERSION_CODE="${VERSION_CODE}"
 
