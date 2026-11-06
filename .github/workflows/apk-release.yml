@@ -48,7 +48,13 @@ jobs:
           BUILD_TOOLS=$(grep -oP '(?<=buildToolsVersion\s=\s")[^"]+' app/build.gradle.kts || echo "${COMPILE_SDK}.0.0")
           echo "SDK: platforms;android-${COMPILE_SDK} build-tools;${BUILD_TOOLS}"
           sdkmanager --licenses < /dev/null > /dev/null || true
-          sdkmanager "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
+          # API 37+ 在新 SDK 仓库中按次版本号拆分（android-37.0/37.1/37.2），
+          # 无裸 android-37 包，全部装上让 AGP 解析
+          sdkmanager "build-tools;${BUILD_TOOLS}" "platform-tools" || true
+          for SUFFIX in "" ".0" ".1" ".2" ".3"; do
+            sdkmanager "platforms;android-${COMPILE_SDK}${SUFFIX}" || true
+          done
+          ls /usr/local/lib/android/sdk/platforms/
 
       - name: Decode release keystore
         env:
