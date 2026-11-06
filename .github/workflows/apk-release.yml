@@ -1,6 +1,8 @@
-name: Build release APK (dispatch)
+name: Build release APK
 
 on:
+  push:
+    branches: [ci/apk-release]
   workflow_dispatch:
     inputs:
       tag:
@@ -15,6 +17,10 @@ on:
 permissions:
   contents: write
 
+env:
+  TAG: ${{ github.event_name == 'push' && 'v943' || github.event.inputs.tag }}
+  VERSION_CODE: ${{ github.event_name == 'push' && '943' || github.event.inputs.version_code }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,7 +28,7 @@ jobs:
       - name: Checkout tag
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: ${{ env.TAG }}
           fetch-depth: 0
           fetch-tags: true
 
@@ -58,8 +64,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleStableRelease \
-            -PAPP_VERSION_NAME="${{ github.event.inputs.tag }}" \
-            -PAPP_VERSION_CODE="${{ github.event.inputs.version_code }}"
+            -PAPP_VERSION_NAME="${TAG}" \
+            -PAPP_VERSION_CODE="${VERSION_CODE}"
 
       - name: Collect APK and checksums
         run: |
@@ -67,7 +73,7 @@ jobs:
           mkdir -p release-apks
           shopt -s nullglob
           for APK in "$OUT_DIR"/*.apk; do
-            cp "$APK" "release-apks/OlliteRT-Zh-${{ github.event.inputs.tag }}-arm64-v8a.apk"
+            cp "$APK" "release-apks/OlliteRT-Zh-${TAG}-arm64-v8a.apk"
           done
           if [ -z "$(ls -A release-apks 2>/dev/null)" ]; then
             echo "::error::No APK found in $OUT_DIR"; exit 1
@@ -79,7 +85,7 @@ jobs:
       - name: Attach to release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.event.inputs.tag }}
+          tag_name: ${{ env.TAG }}
           files: |
             release-apks/*.apk
             release-apks/SHA256SUMS.txt
