@@ -61,6 +61,16 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
 
+      - name: Replace aliyun mirrors with official repos (runner is outside China)
+        run: |
+          sed -i \
+            -e 's|maven("https://maven.aliyun.com/repository/google")|google()|' \
+            -e 's|maven("https://maven.aliyun.com/repository/public")|mavenCentral()|' \
+            -e 's|maven("https://maven.aliyun.com/repository/gradle-plugin")|gradlePluginPortal()|' \
+            settings.gradle.kts
+          echo "--- 替换后的仓库配置 ---"
+          sed -n '/pluginManagement/,/^}/p' settings.gradle.kts | head -25
+
       - name: Build signed APK
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
@@ -69,7 +79,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew --no-daemon --info --stacktrace assembleStableRelease \
+          ./gradlew --no-daemon --stacktrace assembleStableRelease \
             -PAPP_VERSION_NAME="${TAG}" \
             -PAPP_VERSION_CODE="${VERSION_CODE}"
 
